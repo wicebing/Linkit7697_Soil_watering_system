@@ -17,11 +17,11 @@ DHT dht(DHTPIN, DHTTYPE);
 // Soil_moist
 int SoilPin = 17;
 
-char ssid[] = "winni_4";
-char password[] = "073647402";
+char ssid[] = "w*******4";
+char password[] = "0*******2";
 
 //MCS
-MCSDevice mcs("D0H9tR4n", "yx2ARYJzcuLW0xp6");
+MCSDevice mcs("D*******n", "y*******6");
 MCSDisplayFloat temperature("T");
 MCSDisplayFloat humidity("h");
 MCSDisplayFloat light("light");
@@ -271,7 +271,7 @@ void setup_wifi() {
     delay(500);
     Serial.print(".");
     if(try_time==40){
-      char ssid[] = "cheno_02";
+      char ssid[] = "c*******2";
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(ssid);
       WiFi.begin(ssid, password);   
