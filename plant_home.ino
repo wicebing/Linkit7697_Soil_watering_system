@@ -17,11 +17,11 @@ DHT dht(DHTPIN, DHTTYPE);
 // Soil_moist
 int SoilPin = 17;
 
-char ssid[] = "w*******4";
-char password[] = "0*******2";
+char ssid[] = "winni_4";
+char password[] = "073647402";
 
 //MCS
-MCSDevice mcs("D*******n", "y*******6");
+MCSDevice mcs("D0H9tR4n", "yx2ARYJzcuLW0xp6");
 MCSDisplayFloat temperature("T");
 MCSDisplayFloat humidity("h");
 MCSDisplayFloat light("light");
@@ -29,6 +29,8 @@ MCSDisplayFloat soil_moist("soil_moist");
 MCSControllerOnOff relay("relay");
 MCSControllerInteger soil_threshold("soil_threshold");
 MCSControllerInteger temp_threshold("temp_threshold");
+MCSDisplayInteger water_t("wt");
+MCSDisplayInteger Max_water_t("Mwt");
 bool watering = 0;
 int water_times = 0;
 int max_water_times = 30;
@@ -127,6 +129,8 @@ void setup() {
   mcs.addChannel(relay);
   mcs.addChannel(soil_threshold);
   mcs.addChannel(temp_threshold);
+  mcs.addChannel(water_t);
+  mcs.addChannel(Max_water_t);  
 
   mcs.connect();
   mcs.process(100);
@@ -135,19 +139,39 @@ void setup() {
 }
 
 void loop() {
+  LRTC.get();
+  int hr = LRTC.hour();
+  int minute = LRTC.minute();
+  int second = LRTC.second(); 
   msgStr = "";
   String NowTime = getNetworkTime();
-  String hour,minu,seco = "";
-  hour = hour +NowTime[11];
-  hour = hour +NowTime[12];
-  minu = minu +NowTime[14];
-  minu = minu +NowTime[15];
-  seco = seco +NowTime[17];
-  seco = seco +NowTime[18];
-  int hr = hour.toInt();
-  int minute = minu.toInt();
-  int second = seco.toInt();
-  //LRTC.get();
+  if(NowTime != "Connection error"){
+    String year,month,day,hour,minu,seco = "";
+    hour = hour +NowTime[11];
+    hour = hour +NowTime[12];
+    minu = minu +NowTime[14];
+    minu = minu +NowTime[15];
+    seco = seco +NowTime[17];
+    seco = seco +NowTime[18];
+
+    year = year+NowTime[0];
+    year = year+NowTime[1];
+    year = year+NowTime[2];
+    year = year+NowTime[3];
+    month = month+NowTime[5];
+    month = month+NowTime[6];
+    day = day +NowTime[8];
+    day = day +NowTime[9];
+    
+    hr = hour.toInt();
+    minute = minu.toInt();
+    second = seco.toInt();    
+
+    int yyyy = year.toInt();
+    int mm = month.toInt();
+    int dd = day.toInt(); 
+    LRTC.set(yyyy, mm, dd, hr, minute, second);
+  }
   //int hr = LRTC.hour();
   //int minute = LRTC.minute();
   //int second = LRTC.second();
@@ -162,8 +186,12 @@ void loop() {
                      ",\"光線\":"+ l + 
                      ",\"土壤濕度\":"+ now_soil_moisture +
                      "}";
-  Serial.print(NowTime);
+  Serial.println(NowTime);
   Serial.println(msgStr); 
+
+  Serial.print(LRTC.hour());
+  Serial.print(LRTC.minute());
+  Serial.println(LRTC.second());
   
   if((hr>=5 and hr<=8) or (hr >= 21 and hr <= 23)){
     watering = is_watering(now_soil_moisture);   
@@ -178,15 +206,17 @@ void loop() {
   }
 
   max_water_times = check_max_water_times(t, h, hr);
+  int is_w_mcs = 0;
   if(water_times<max_water_times){
-    water_times += open_watering_relay(watering);
+    is_w_mcs = open_watering_relay(watering);
+    water_times += is_w_mcs;
   }
   Serial.print("澆水次數/最大次數：");
   Serial.print(water_times);
   Serial.print(" / ");
   Serial.println(max_water_times);
 
-  upload_mcs(n, h, t, l, now_soil_moisture);
+  upload_mcs(n, h, t, l, now_soil_moisture,water_times,max_water_times, is_w_mcs);
   if(soil_threshold.updated()){
     Soil_T = soil_threshold.value();
     Serial.print("MCS 土壤閾值修改：");
@@ -198,12 +228,12 @@ void loop() {
   } 
   Serial.println(temp_T);    
   Serial.println(Soil_T);
-  Serial.print(water_times);
+  Serial.println(water_times);
   delay(1000); //每1秒回傳一次資料
   n++;
 }
 
-void upload_mcs(int n, float h, float t, int l, int now_soil_moisture){
+void upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water_times,int max_water_times, int is_w_mcs){
   //upload MCS
   int try_time =0;
   while (!mcs.connected() and try_time<5) {
@@ -221,12 +251,17 @@ void upload_mcs(int n, float h, float t, int l, int now_soil_moisture){
     humidity.set(h);
     light.set(l);
     soil_moist.set(now_soil_moisture);
+    water_t.set(water_times);
+    Max_water_t.set(max_water_times);
   } 
-  if(n%300==0){
+  if(n%100==0 or is_w_mcs>0){
     temperature.set(t);
     humidity.set(h);
     light.set(l);
     soil_moist.set(now_soil_moisture);
+    water_t.set(water_times);
+    Max_water_t.set(max_water_times);
+    Serial.println("update MCS");
   }
 }
 
@@ -271,7 +306,7 @@ void setup_wifi() {
     delay(500);
     Serial.print(".");
     if(try_time==40){
-      char ssid[] = "c*******2";
+      char ssid[] = "cheno_02";
       Serial.print("Attempting to connect to SSID: ");
       Serial.println(ssid);
       WiFi.begin(ssid, password);   
