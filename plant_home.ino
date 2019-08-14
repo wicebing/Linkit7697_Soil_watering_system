@@ -211,6 +211,9 @@ void loop() {
     is_w_mcs = open_watering_relay(watering);
     water_times += is_w_mcs;
   }
+  else{
+    is_w_mcs = open_watering_relay(false);
+  }
   Serial.print("澆水次數/最大次數：");
   Serial.print(water_times);
   Serial.print(" / ");
