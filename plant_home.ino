@@ -193,11 +193,13 @@ void loop() {
   Serial.print(LRTC.minute());
   Serial.println(LRTC.second());
   
-  if((hr>=5 and hr<=8) or (hr >= 21 and hr <= 23)){
+  if((hr>=5 and hr<=7) or (hr >= 21 and hr <= 23)){
     watering = is_watering(now_soil_moisture);   
     Serial.println("time1");
-  }else if(t>temp_T and (hr>=10 and hr<=12)){
-    watering = is_watering(now_soil_moisture); 
+  }else if(hr>=9 and hr<=11){
+    if(t>temp_T){
+      watering = is_watering(now_soil_moisture); 
+    }
     Serial.println("time2");
   }else{
     watering = false;
