@@ -219,7 +219,7 @@ void loop() {
   Serial.print(" / ");
   Serial.println(max_water_times);
 
-  upload_mcs(n, h, t, l, now_soil_moisture,water_times,max_water_times, is_w_mcs);
+  water_times += upload_mcs(n, h, t, l, now_soil_moisture,water_times,max_water_times, is_w_mcs);
   if(soil_threshold.updated()){
     Soil_T = soil_threshold.value();
     Serial.print("MCS 土壤閾值修改：");
@@ -236,28 +236,33 @@ void loop() {
   n++;
 }
 
-void upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water_times,int max_water_times, int is_w_mcs){
+int upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water_times,int max_water_times, int is_w_mcs){
   //upload MCS
   int try_time =0;
+  int manual_water_time = 0;
   while (!mcs.connected() and try_time<5) {
     mcs.connect();
     try_time++;
   }
   mcs.process(100);
-  if(relay.updated()){
+  Serial.print("Relay Value:");
+  Serial.println(relay.value());
+  if(relay.updated() and relay.value()>0){
+    Serial.println("Relay Updated");
     watering = relay.value();
     open_watering_relay(watering);
     Serial.print("MCS啟動：");
     Serial.println(watering);
-    delay(120000);
     temperature.set(t);
     humidity.set(h);
     light.set(l);
     soil_moist.set(now_soil_moisture);
-    water_t.set(water_times);
+    water_t.set(water_times+5);
     Max_water_t.set(max_water_times);
+    manual_water_time += 5;
+    delay(120000);
   } 
-  if(n%100==0 or is_w_mcs>0){
+  if(n%150==0 or is_w_mcs>0){
     temperature.set(t);
     humidity.set(h);
     light.set(l);
@@ -266,6 +271,7 @@ void upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water
     Max_water_t.set(max_water_times);
     Serial.println("update MCS");
   }
+  return manual_water_time;
 }
 
 int check_max_water_times(float temp, float humidity, int hour){
