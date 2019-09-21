@@ -193,10 +193,10 @@ void loop() {
   Serial.print(LRTC.minute());
   Serial.println(LRTC.second());
   
-  if((hr>=5 and hr<=7) or (hr >= 21 and hr <= 23)){
+  if((hr>=8 and hr<=9) or (hr >= 19 and hr <= 20)){
     watering = is_watering(now_soil_moisture);   
     Serial.println("time1");
-  }else if(hr>=9 and hr<=11){
+  }else if(hr>=10 and hr<=11){
     if(t>temp_T){
       watering = is_watering(now_soil_moisture); 
     }
@@ -207,9 +207,11 @@ void loop() {
     Serial.println("time3");
   }
 
-  max_water_times = check_max_water_times(t, h, hr);
+  if(h>20 and t>2 and t< 50){
+    max_water_times = check_max_water_times(t, h, hr);
+  }
   int is_w_mcs = 0;
-  if(water_times<max_water_times){
+  if(water_times<max_water_times and now_soil_moisture < 4000){
     is_w_mcs = open_watering_relay(watering);
     water_times += is_w_mcs;
   }
@@ -222,6 +224,9 @@ void loop() {
   Serial.println(max_water_times);
 
   water_times += upload_mcs(n, h, t, l, now_soil_moisture,water_times,max_water_times, is_w_mcs);
+  delay(1000); //每1秒回傳一次資料
+  n++;
+  
   if(soil_threshold.updated()){
     Soil_T = soil_threshold.value();
     Serial.print("MCS 土壤閾值修改：");
@@ -234,8 +239,6 @@ void loop() {
   Serial.println(temp_T);    
   Serial.println(Soil_T);
   Serial.println(water_times);
-  delay(1000); //每1秒回傳一次資料
-  n++;
 }
 
 int upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water_times,int max_water_times, int is_w_mcs){
