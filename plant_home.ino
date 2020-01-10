@@ -8,8 +8,16 @@ using namespace std;
 // DHT
 #include "DHT.h"
 #define DHTPIN 2
-#define DHTTYPE DHT22 
+#define DHTTYPE DHT11 
 DHT dht(DHTPIN, DHTTYPE);
+
+// LED BAR
+#include <Grove_LED_Bar.h>
+Grove_LED_Bar __bar2(4, 3, 0);
+
+// OLED Disp
+#include <Wire.h>
+#include <SeeedOLED.h>
 
 // Realy
 #define RelayPin 12 
@@ -136,6 +144,13 @@ void setup() {
   mcs.process(100);
   Soil_T = soil_threshold.value();
   temp_T = temp_threshold.value();
+
+  __bar2.begin();
+
+  Wire.begin();
+  SeeedOled.init();
+  SeeedOled.deactivateScroll();
+  SeeedOled.setPageMode();
 }
 
 void loop() {
@@ -239,6 +254,42 @@ void loop() {
   Serial.println(temp_T);    
   Serial.println(Soil_T);
   Serial.println(water_times);
+
+  //show wifi on LED BAR
+  long rssi = WiFi.RSSI();
+  int rssi_show = floor((rssi+100)/10);
+  Serial.print("rssi: ");
+  Serial.print(rssi);
+  Serial.print(" / ");
+  Serial.println(rssi_show);  
+  if(rssi_show>10){
+    rssi_show =10;
+  }
+  else if(rssi_show<0){
+    rssi_show = 0;
+  }  
+  __bar2.setLevel(rssi_show); 
+
+  // OLED disp
+  SeeedOled.clearDisplay();
+  SeeedOled.setTextXY(0, 4);
+  SeeedOled.putString(WiFi.SSID());  
+  SeeedOled.setTextXY(2, 0);
+  SeeedOled.putString("Temp:");
+  SeeedOled.setTextXY(2, 7);
+  SeeedOled.putFloat(t);
+  SeeedOled.setTextXY(3, 0);
+  SeeedOled.putString("Humid:");
+  SeeedOled.setTextXY(3, 7);
+  SeeedOled.putFloat(h);
+  SeeedOled.setTextXY(4, 0);
+  SeeedOled.putString("Light:");
+  SeeedOled.setTextXY(4, 7);
+  SeeedOled.putFloat(l);
+  SeeedOled.setTextXY(6, 0);
+  SeeedOled.putString("Moist:");
+  SeeedOled.setTextXY(6, 7);
+  SeeedOled.putFloat(now_soil_moisture);  
 }
 
 int upload_mcs(int n, float h, float t, int l, int now_soil_moisture, int water_times,int max_water_times, int is_w_mcs){
